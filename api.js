@@ -35,30 +35,44 @@ router.route('/login').post((request,response)=>{
 
    dboperations.loginUser(login).then(result => {
       if(!result){
-         response.status(401).json(result[0]);
+         response.status(401).json({message: 'Invalid username or password'});
       }
 
       //if user is authenicated
-      response.status(200).json(result);
+      response.status(200).json(result[0]);
    })
 
 })
 
-router.route('/orders').get((request,response)=>{
-
-    dboperations.getOrders().then(result => {
+//fetch all accounts
+router.route('/accounts').get((request,response)=>{
+    dboperations.getAccounts().then(result => {
        response.json(result[0]);
     })
+})
+
+// add candidates
+router.route('/addCandidate').post((request,response)=>{
+
+   let candidates =  {...request.body}
+
+   dboperations.registerCandidate(candidates).then(result => {
+      response.status(202).json({message: "Candidate added"});
+   })
 
 })
 
-router.route('/orders/:id').get((request,response)=>{
+// create election
+router.route('/addElection').post((request,response)=>{
 
-    dboperations.getOrder(request.params.id).then(result => {
-       response.json(result[0]);
-    })
+   let election =  {...request.body}
 
+   dboperations.createElection(election).then(result => {
+      response.status(202).json({message: "Election Created"});
+   })
 })
+
+
 
 router.route('/orders').post((request,response)=>{
 
@@ -69,9 +83,6 @@ router.route('/orders').post((request,response)=>{
     })
 
 })
-
-
-
 
 var port = process.env.PORT || 8090;
 app.listen(port);
