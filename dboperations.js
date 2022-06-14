@@ -71,6 +71,27 @@ async function getAccounts() {
     }
 }
 
+// login authentication
+async function verifyCandidacy(id, status) {
+
+    console.log(id, status);
+    try {
+        let pool = await sql.connect(config);
+        let verify = await pool.request()
+            .input('status', sql.Char, status)
+            .input('id', sql.Int, id)
+            .query('UPDATE Candidate SET Status = @status WHERE CandidateID = @id');
+        
+        return verify.recordsets;
+    }
+    catch (err) {
+        
+        console.log(err);
+        return false;
+    }
+}
+
+
 async function registerCandidate(candidates) {
     try {
         let pool = await sql.connect(config);
@@ -81,10 +102,11 @@ async function registerCandidate(candidates) {
             .input('ElectionID', sql.VarChar, candidates.electionId)
             .input('GradeLevelID', sql.VarChar, candidates.GradeLevelID)
             .input('PositionID', sql.VarChar, candidates.PositionID)
-            .input('PartylistID', sql.Int, candidates.PartylistID)
+            .input('PartyListID', sql.VarChar, candidates.PartyListID)
             .input('Link', sql.VarChar, candidates.Link)
             .input('Status', sql.VarChar, candidates.Status)
-            .query('INSERT INTO Candidate (Firstname, Middlename, Lastname,ElectionID, GradeLevelID,PositionID,PartylistID,Link,Status) VALUES (@Firstname, @Middlename, @Lastname,@ElectionID, @GradeLevelID,@PositionID,@PartylistID,@Link,@Status)');
+            .input('VoteCount', sql.VarChar, candidates.VoteCount)
+            .query('INSERT INTO Candidate (Firstname, Middlename, Lastname,ElectionID, GradeLevelID,PositionID,PartyListID,Link,Status,VoteCount) VALUES (@Firstname, @Middlename, @Lastname,@ElectionID, @GradeLevelID,@PositionID,@PartyListID,@Link,@Status,@VoteCount)');
         return insertcandidate.recordset;
     }
     catch (err) {
@@ -109,19 +131,37 @@ async function createElection(election) {
     }
 }
 
-async function getOrder(orderId) {
+async function getCandidate(status) {
     try {
         let pool = await sql.connect(config);
-        let product = await pool.request()
-            .input('input_parameter', sql.Int, orderId)
-            .query("SELECT * from Orders where Id = @input_parameter");
-        return product.recordsets;
+        let Candidate = await pool.request()
+        .input('status', sql.Char, status)
+        .query("SELECT * from Candidate WHERE Status = @status");
+        return Candidate.recordsets;
 
     }
     catch (error) {
         console.log(error);
     }
 }
+
+async function updateVoteCount(id) {
+    const addOne = 1;
+    try {
+        let pool = await sql.connect(config);
+        let Candidate = await pool.request()
+        .input('id', sql.Int, id)
+        .input('voteCount', sql.Int, addOne)
+        .query("UPDATE Candidate SET VoteCount = VoteCount +  @voteCount WHERE CandidateID = @id");
+        return Candidate.recordsets;
+
+    }
+    catch (error) {
+        console.log(error);
+    }
+}
+
+
 
 
 async function addOrder(order) {
@@ -145,12 +185,14 @@ async function addOrder(order) {
 
 
 module.exports = {
+    getCandidate: getCandidate,
+    verifyCandidacy: verifyCandidacy,
     determineUserType:determineUserType,
     getAccounts: getAccounts,
-    getOrder : getOrder,
     addOrder : addOrder,
     addUser: addUser,
     loginUser: loginUser,
     registerCandidate: registerCandidate,
     createElection: createElection,
+    updateVoteCount: updateVoteCount,
 }

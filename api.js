@@ -51,13 +51,38 @@ router.route('/accounts').get((request,response)=>{
     })
 })
 
+//fetch all accounts
+router.route('/candidates/:status').get((request,response)=>{
+   dboperations.getCandidate(request.params.status).then(result => {
+      response.json(result[0]);
+   })
+})
+
+//verify
+router.route('/verifycandidate/:id/:status').get((request,response)=>{
+   dboperations.verifyCandidacy(request.params.id, request.params.status).then(result => {
+      response.status(202).json(result[0]);
+   })
+})
+
+
 // add candidates
 router.route('/addCandidate').post((request,response)=>{
 
    let candidates =  {...request.body}
 
    dboperations.registerCandidate(candidates).then(result => {
-      response.status(202).json({message: "Candidate added"});
+      response.status(200).json({message: "Candidate added"});
+   })
+
+})
+
+
+//updates the vote
+router.route('/updateVoteCount/:id').get((request,response)=>{
+
+   dboperations.updateVoteCount(request.params.id).then(result => {
+      response.status(200).json({message: "Vote added"});
    })
 
 })
@@ -86,7 +111,7 @@ router.route('/orders').post((request,response)=>{
 
 var port = process.env.PORT || 8090;
 app.listen(port);
-console.log('Order API is runnning at ' + port);
+console.log('EMS is runnning at ' + port);
 
 
 
