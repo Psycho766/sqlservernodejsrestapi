@@ -34,7 +34,7 @@ router.route('/login').post((request,response)=>{
    let login =  {...request.body}
 
    dboperations.loginUser(login).then(result => {
-      if(!result){
+      if(result.length === 0){
          response.status(401).json({message: 'Invalid username or password'});
       }
 
@@ -49,6 +49,13 @@ router.route('/accounts').get((request,response)=>{
     dboperations.getAccounts().then(result => {
        response.json(result[0]);
     })
+})
+
+//fetch all accounts
+router.route('/result/:position').get((request,response)=>{
+   dboperations.getResult(request.params.position).then(result => {
+      response.json(result[0]);
+   })
 })
 
 //fetch all accounts

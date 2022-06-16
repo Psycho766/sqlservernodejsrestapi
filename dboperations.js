@@ -1,5 +1,6 @@
 var config = require('./dbconfig');
 const sql = require('mssql');
+const e = require('express');
 
 async function addUser(user) {
     try {
@@ -19,23 +20,32 @@ async function addUser(user) {
 
 // login authentication
 async function loginUser(user) {
+    const voter = 'Voter';
     try {
         let pool = await sql.connect(config);
-        let findUser = await pool.request()
+
+        if(user.UserType == voter) {
+            let findVoter = await pool.request()
+            .input('Username', sql.VarChar, user.Username)
+            .input('Password', sql.VarChar, user.Password)
+            .input('userType', sql.Int, determineUserType(user.UserType))
+            .query('SELECT Voter.VoterID, Voter.password, Voter.GradeLevelID, SystemUser.SystemUserID FROM Voter JOIN SystemUser ON SystemUser.SystemUserID = Voter.SystemUserID WHERE Voter.VoterID = @Username AND Voter.Password = @Password AND SystemUser.SystemUserID = @usertype');
+
+            console.log("voterLogin", findVoter.recordset);
+            // if recordet is greter than one meaning the user is existing and authorized
+            return findVoter.recordset; 
+        }else{
+
+            let findUser = await pool.request()
                 .input('Username', sql.VarChar, user.Username)
                 .input('Password', sql.VarChar, user.Password)
                 .input('userType', sql.Int, determineUserType(user.UserType))
-            .query('SELECT Account.Username, Account.Password, SystemUser.SystemUserID FROM Account JOIN SystemUser ON SystemUser.SystemUserID = Account.SystemUserID WHERE Account.Username = @Username AND Account.Password = @Password AND SystemUser.SystemUserID = @usertype');
+                .query('SELECT Account.Username, Account.Password, SystemUser.SystemUserID FROM Account JOIN SystemUser ON SystemUser.SystemUserID = Account.SystemUserID WHERE Account.Username = @Username AND Account.Password = @Password AND SystemUser.SystemUserID = @usertype');
 
-            //join table account and systemuser
-
-        
-        console.log("loginUser", findUser.recordsets);
-        // if recordet is greter than one meaning the user is existing and authorized
-        if(findUser.recordset.length > 0) {
-            return true;
-        }else{
-            return false;
+            console.log("loginUser", findUser.recordset);
+            // if recordet is greter than one meaning the user is existing and authorized
+           return findUser.recordset;
+s
         }
     }
     catch (err) {
@@ -63,6 +73,21 @@ async function getAccounts() {
             .query('SELECT Account.AccountiD, Account.SystemUserID, Account.EmailAddress, Account.Username, Account.Password, SystemUser.UserType FROM Account INNER JOIN SystemUser ON Account.SystemUserID = SystemUser.SystemUserID');
         
         return accounts.recordsets;
+    }
+    catch (err) {
+        
+        console.log(err);
+        return false;
+    }
+}
+
+async function getResult(posotionId) {
+    try {
+        let pool = await sql.connect(config);
+        let accounts = await pool.request()
+            .input('positionId', sql.VarChar, posotionId)
+            .query('SELECT MAX(VoteCount) AS TotalVote, PositionID, FirstName, Lastname FROM Candidate WHERE PositionID = @positionId GROUP BY FirstName, Lastname, PositionID');
+        return accounts.recordset;
     }
     catch (err) {
         
@@ -185,6 +210,7 @@ async function addOrder(order) {
 
 
 module.exports = {
+    getResult: getResult,
     getCandidate: getCandidate,
     verifyCandidacy: verifyCandidacy,
     determineUserType:determineUserType,
